@@ -700,6 +700,8 @@ if SERVER then
     
     if !owner():isAdmin() then
         chip():remove()
+    else
+        chip():setPos(Vector(0, 0, -10000))
     end
 end
 

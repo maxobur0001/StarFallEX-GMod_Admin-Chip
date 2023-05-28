@@ -2,12 +2,28 @@
 --@author maxobur0001
 --@shared
 
+options = {"Switch players! (SWITCH)", "Switch function! (OFF)", "Default =)", "HUD function! (OFF)", "Info"} -- Functions
+switches = {}
+
+for i, v in pairs(options) do
+    if string.sub(v, -8) == "(SWITCH)" then
+        switches[v] = { }
+    end
+end
+
 if SERVER then
+    
+    net.receive("set_switches", function()
+        switches = net.readTable()
+    end)
+    function GetTargets(name)
+        return switches[name]
+    end
+    
     --------- Players switches ----------------
     net.receive("Switch players! (SWITCH)", function()
-        targs = net.readTable() -- Table of enabled
         ply = net.readEntity() -- Enabled now
-        if table.hasValue(targs, ply) then
+        if table.hasValue(GetTargets("Switch players! (SWITCH)"), ply) then
             print(Color(255, 255, 255), "Player " .. ply:getName() .. " enabled!")
         else
             print(Color(255, 255, 255), "Player " .. ply:getName() .. " off!")
@@ -37,7 +53,6 @@ if CLIENT then
         menupage = 1
         
         -------------------- Options -------------------------
-        options = {"Switch players! (SWITCH)", "Switch function! (OFF)", "Default =)", "HUD function! (OFF)", "Info"} -- Functions
         authors = {"Author: Me!", "Coder: Yeah, that's me.", "Ideas: Me! Me!"} -- Info
         menu_color = Color(150, 150, 255, 50) -- Menu color (RGBA)
         menu_title = "This is a menu :^" -- Menu title
@@ -47,13 +62,6 @@ if CLIENT then
         is_main = true
         is_authors = false
         option = 1
-        switches = {}
-
-        for i, v in pairs(options) do
-            if string.sub(v, -8) == "(SWITCH)" then
-                switches[v] = { }
-            end
-        end 
         onned = false
         
         ---------------- Draw menu function ------------------
@@ -176,8 +184,11 @@ if CLIENT then
                             else
                                 table.insert(switches[option], find.allPlayers()[(butt-1)+((ppage*7)-7)])
                             end
+                            net.start("set_switches")
+                            net.writeTable(switches) 
+                            net.send()
+                            
                             net.start(option)
-                            net.writeTable(switches[option])
                             net.writeEntity(find.allPlayers()[(butt-1)+((ppage*7)-7)])
                             net.send()
                         end
