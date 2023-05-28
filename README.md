@@ -37,9 +37,11 @@ Invisibility with model size reduction to 1%.
 This is the menu base from the admin chip.
 ## How do I add functions?
 To add a custom function, you need to find the "options" variable, and then add the name of your function to the curly brackets separated by commas in quotation marks. Functions have attributes:
-(SWITCH) is a cyclic function.
-(OFF) - included function
-They should be added to the end.
+
+* (SWITCH) is a cyclic function.
+* (OFF) - enabled and disabled function
+
+They should be added to the end at serverside.
 
 ### Single function
 For a single function code, add after if SERVER then:
@@ -61,8 +63,8 @@ hook.add("same hook name", "same name", function()
     end
 end)
 ```
-### Included function
-For the code of the included function, add:
+### Enabled and disabled function
+For the code of the enabled and disabled function, add:
 ```lua
 net.receive("function name (ON)", function()
 --here write the code (instead of this inscription) (code when turned on)
