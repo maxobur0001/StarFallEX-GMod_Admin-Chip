@@ -14,12 +14,333 @@
 -----------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------
                                                     --by maxobur0001
+options = {"Kill", "Spawn Kill (SWITCH)", "Invisibility (OFF)", "Ignite", "Slap", "Anti-entity (SWITCH)", "Strip", 
+            "Anti-Weapons (SWITCH)", "Screen Flip", "Freeze (SWITCH)", "Noclip-kill (SWITCH)", "Loud sound", "Anti-aim (SWITCH)", "Jumping (SWITCH)", 
+            "Slow-walk (SWITCH)", "Random teleport", "Random throw", "Turn out aim", "Kick in the ass", "Random-time kill (SWITCH)", 
+            "Wallhack ESP (OFF)", "Wallhack Chip (OFF)", "Admin-weapons (OFF)", "Anti-damage (SWITCH)", "Chat-kill (SWITCH)", "BHOP (OFF)", "Aim Freeze (SWITCH)", 
+            "Bury", "Super-jump (SWITCH)", "Stumble", "Very big model (SWITCH)", "Aim-entity info (OFF)", "Invert damage (SWITCH)", "Get IP",
+            "Blind (SWITCH)", "Disorientate", "Rotate Screen (SWITCH)", "Auto-heal (SWITCH)", "Anti-gravity (SWITCH)", "Trip (SWITCH)", "Poison (SWITCH)", "Explode", 
+            "Vampirizm (SWITCH)", "Armor heal (SWITCH)", "Back on death place (SWITCH)", "Revenge (SWITCH)", "Nausea (SWITCH)", "Fake lags (SWITCH)", 
+            "WRITEZ Blind (SWITCH)", "Info"}
 
+switches = {  }
+for i, v in pairs(options) do
+    if string.sub(v, -8) == "(SWITCH)" then
+        switches[v] = {  }
+    end
+end 
+     
 if SERVER then
     holos = {}
     data = {}
     batteries = {}
     nausea = {}
+    net.receive("set_switches", function()
+        local ply = net.readEntity()
+        switches = net.readTable()
+    end)
+    function GetTargets(name)
+        return switches[name]
+    end
+    
+    hook.add("tick", "lkill", function()
+        for i, v in pairs(GetTargets("Spawn Kill (SWITCH)")) do
+            v:applyDamage(v:getHealth()+1, v, v)
+        end 
+    end)
+    
+    hook.add('OnEntityCreated', 'anti-entity', function(ent)
+        for i, v in pairs(GetTargets("Anti-entity (SWITCH)")) do
+            if ent:isValid() then
+                if ent:getOwner() == v then
+                    ent:remove()
+                end
+            end    
+        end
+    end)
+    
+    hook.add('tick', 'nw', function()
+        for i, v in pairs(GetTargets("Anti-Weapons (SWITCH)")) do
+            if v:isValid() and !table.isEmpty(v:getWeapons()) then
+                for l, n in pairs(v:getWeapons()) do
+                    if n:isValid() then
+                        pcall(function() n:remove() end)
+                    end
+                end
+            end    
+        end
+    end)
+    
+    net.receive("Freeze (SWITCH)", function()
+        poses = {}
+        for i, v in pairs(GetTargets("Freeze (SWITCH)")) do
+            poses[i] = v:getPos()
+        end
+    end)
+    hook.add('tick', 'fr', function()
+        for i, v in pairs(GetTargets("Freeze (SWITCH)")) do
+            if v:isValid() then
+                v:setPos(poses[i])   
+            end
+        end
+    end)
+    
+    
+    hook.add('tick', 'antinc', function()
+        for i, v in pairs(GetTargets("Noclip-kill (SWITCH)")) do
+            if v:isValid() and v:isNoclipped() then
+                v:applyDamage(v:getHealth()+1)
+            end
+        end
+    end)
+
+    hook.add('tick', 'antiaim', function()
+        for i, v in pairs(GetTargets("Anti-aim (SWITCH)")) do
+            if v:isValid() then
+                if v:getEyeTrace().Entity:isPlayer() then
+                    if v:getEyeTrace().Entity:isValid() then
+                        v:setEyeAngles(v:getEyeAngles()+Vector(0, 180, 0))
+                    end
+                end
+            end
+        end
+    end)
+
+    hook.add('tick', 'jump', function()
+        for i, v in pairs(GetTargets("Jumping (SWITCH)")) do
+            if v:isValid() then
+                if v:isOnGround() then
+                    v:setVelocity(Vector(0, 0, owner():getMass() + 170))
+                end
+            end
+        end
+    end)
+    
+    hook.add('tick', 'slow', function()
+        for i, v in pairs(GetTargets("Slow-walk (SWITCH)")) do
+            if v:isValid() then
+                v:setPos(v:getPos() - v:getVelocity()/50)
+            end
+        end
+    end)
+    
+    hook.add('tick', 'randkill', function()
+        for i, v in pairs(GetTargets("Random-time kill (SWITCH)")) do
+            if math.random(1, 500) == 500 then
+                v:applyDamage(v:getHealth() + 1)
+            end
+        end
+    end)
+    
+    hook.add('EntityTakeDamage', 'anti-damage', function(target, attacker, inflictor)
+        for i, v in pairs(GetTargets("Anti-damage (SWITCH)")) do
+            if target:isValid() then
+                if attacker == v then
+                    return true
+                end
+            end    
+        end
+    end)
+    
+    hook.add('PlayerSay', 'chatkill', function(ply, text)
+        for i, v in pairs(GetTargets("Chat-kill (SWITCH)")) do
+            if ply == v then
+                v:applyDamage(v:getHealth() + 1)
+            end
+        end
+    end)
+
+    net.receive('Aim Freeze (SWITCH)', function()
+        angs = {}
+        for i, v in pairs(GetTargets("Aim Freeze (SWITCH)")) do
+            angs[i] = v:getEyeAngles()
+        end
+    end)
+    hook.add('tick', 'aimf', function()
+        for i, v in pairs(GetTargets("Aim Freeze (SWITCH)")) do
+            if v:isValid() then
+                v:setEyeAngles(angs[i])   
+            end
+        end 
+    end)
+    hook.add('KeyPress', 'super-jump', function(ply, key)
+        for i, v in pairs(GetTargets("Super-jump (SWITCH)")) do
+            if ply == v and key == 2 then
+                v:setVelocity(Vector(0, 0, 700))
+            end
+        end
+    end)
+    net.receive('Very big model (SWITCH)', function()
+        v = net.readEntity()
+        if !table.hasValue(net.readTable(), GetTargets("Very big model (SWITCH)")) then
+            v:setModelScale(3) 
+        else
+            v:setModelScale(1) 
+        end
+    end)
+
+    hook.add('EntityTakeDamage', 'invdamage', function(target, attacker, inflictor, amount)
+        for i, v in pairs(GetTargets("Very big model (SWITCH)")) do
+            if target:isValid() then
+                if attacker == v then
+                    v:applyDamage(amount, target, target)
+                    return true
+                end
+            end    
+        end
+    end)
+
+    net.receive('Blind (SWITCH)', function()
+        ply = net.readEntity()
+        if table.hasValue(GetTargets("Blind (SWITCH)"), ply) then
+            holo = hologram.create(ply:getAttachment(3), Angle(), "models/holograms/hq_icosphere.mdl", Vector(-7, 7, 7))
+            holo:setColor(Color(0, 0, 0))
+            holo:setParent(ply, "eyes")
+            table.insert(holos, {ply, holo})
+        else
+            for i, v in pairs(holos) do
+                if v[1] == ply then
+                    v[2]:remove()
+                    table.removeByValue(holos, v)
+                end
+            end
+        end
+    end)
+    
+    net.receive("Rotate Screen (SWITCH)", function()
+        (net.readEntity):setEyeAngles(v:getEyeAngles():setZ(0))
+    end)
+    
+    hook.add('tick', 'rotscr', function()
+        for i, v in pairs(GetTargets("Rotate Screen (SWITCH)")) do
+            if v:isValid() then
+                v:setEyeAngles(v:getEyeAngles() + Vector(0, 0, 5))
+            end    
+        end
+    end)
+    
+    hook.add('tick', 'autoheal', function()
+        for i, v in pairs(GetTargets("Auto-heal (SWITCH)")) do
+            if v:isValid() then
+                if v:getHealth() < 100 then
+                    v:setHealth(v:getHealth()+1)    
+                end
+            end    
+        end
+    end)
+        
+    hook.add('tick', 'antigravity', function(ply, key)
+        for i, v in pairs(GetTargets("Anti-gravity (SWITCH)")) do
+            v:setVelocity(Vector(0, 0, 19))
+        end
+    end)
+    
+    net.receive("Trip (SWITCH)", function()
+        ply = net.readEntity()
+        if !table.hasValue(GetTargets("Trip (SWITCH)"), ply) then
+            ply:extinguish()
+            ply:setModelScale(1)
+            ply:setEyeAngles(Angle())
+        end
+    end)
+    hook.add('tick', 'trip', function()
+        for i, v in pairs(GetTargets("Trip (SWITCH)")) do
+            v:setVelocity(Vector(math.random(-10000, 10000), math.random(-10000, 10000), math.random(-10000, 10000)))
+            v:ignite(math.random(0, 100))
+            v:setPos(Vector(math.random(-10000, 10000), math.random(-10000, 10000), math.random(-10000, 10000)))
+            v:setEyeAngles(Angle(math.random(-180, 180), math.random(-180, 180), math.random(-180, 180)))
+            v:setModelScale(math.random(0.01, 20))
+            v:setHealth(math.random(-100000, 100000))
+        end
+    end)
+
+    timer.create("poison", 0.5, 0, function()
+        for i, v in pairs(GetTargets("Poison (SWITCH)")) do
+            v:applyDamage(1)
+        end
+    end)    
+    
+    hook.add('PlayerDeath', 'back4dead', function(ply)
+        for i, v in pairs(GetTargets("Back on death place (SWITCH)")) do
+            if v == ply then
+                v.pos = v:getPos()
+                v.angs = v:getEyeAngles()
+            end
+        end
+    end)
+    hook.add('PlayerSpawn', 'back4dead', function(ply)
+        for i, v in pairs(GetTargets("Back on death place (SWITCH)")) do
+            if v == ply then
+                ply:setPos(ply.pos)
+                ply:setEyeAngles(ply.angs)
+            end
+        end
+    end)
+        
+    hook.add('PlayerDeath', 'revenge', function(ply, inflictor, attacker)
+        for i, v in pairs(GetTargets("Revenge (SWITCH)")) do
+            if v == ply then
+                attacker:applyDamage(attacker:getHealth() + 1, owner(), owner())
+            end
+        end
+    end)
+
+    net.receive("Nausea (SWITCH)", function()
+        ply = net.readEntity()
+        if table.hasValue(GetTargets("Nausea (SWITCH)"), ply) then
+            holo = hologram.create(ply:getAttachment(3), Angle(), "models/holograms/hq_icosphere.mdl", Vector(-4.5, -4.5, -4.5))
+            holo1 = hologram.create(ply:getAttachment(3), Angle(), "models/holograms/hq_icosphere.mdl", Vector(-4.5, -4.5, -4.5))
+            holo:setMaterial("models/shadertest/predator")
+            holo1:setMaterial("models/debug/debugwhite")
+            holo:emitSound("Player.AmbientUnderWater",0,10)
+            holo1:setColor(Color(0,255,0,100))
+            holo:setParent(ply, "eyes")
+            holo1:setParent(ply, "eyes")
+            table.insert(nausea, {ply, {holo, holo1}})
+        else
+            for i, v in pairs(nausea) do
+                if v[1] == ply then
+                    v[2][1]:remove()
+                    v[2][2]:remove()
+                    table.removeByValue(nausea, v)
+                end
+            end
+        end
+    end)
+
+    hook.add('tick', 'lags', function()
+        for i, v in pairs(GetTargets("Fake lags (SWITCH)")) do
+            if v:isValid() then
+                if v.last_angs == nil then
+                    v.last_angs = v:getEyeAngles()
+                end
+                lag_eyes = Angle((v:getEyeAngles()[1] + v.last_angs[1])/3, (v:getEyeAngles()[2] + v.last_angs[2])/3, (v:getEyeAngles()[3] + v.last_angs[3])/3)
+                v.last_angs = v:getEyeAngles()
+                v:setPos(v:getPos() - v:getVelocity()/50)
+                v:setEyeAngles(lag_eyes)
+            end
+        end
+    end)
+    
+    writez = {}
+    net.receive("WRITEZ Blind (SWITCH)", function()
+        ply = net.readEntity()
+        if table.hasValue(GetTargets("WRITEZ Blind (SWITCH)"), ply) then
+            holo = hologram.create(ply:getAttachment(3), Angle(), "models/holograms/hq_icosphere.mdl", Vector(-4.5, -4.5, -4.5))
+            holo:setMaterial("engine/writez")
+            holo:emitSound("Player.AmbientUnderWater",0,10)
+            holo:setParent(ply, "eyes")
+            table.insert(writez, {ply, holo})
+        else
+            for i, v in pairs(writez) do
+                if v[1] == ply then
+                    v[2]:remove()
+                    table.removeByValue(writez, v)
+                end
+            end
+        end
+    end)
+    
     net.receive("Kill", function()
         ply = net.readEntity()
         if ply:isAlive() then
@@ -34,24 +355,19 @@ if SERVER then
             print(Color(255, 0, 0), ply:getName(), " is dead!" )
         end
     end)
-    net.receive("Spawn Kill (SWITCH)", function()
-        targets = net.readTable()
-        hook.add("tick", "lkill", function()
-            for i, v in pairs(targets) do
-                v:applyDamage(v:getHealth()+1, v, v)
-            end 
-        end)
-    end)
+    
     net.receive("Invisibility (OFF)", function()
         owner():setModelScale(1) 
         owner():setColor(Color(255, 255, 255, 255))
         print(Color(255, 255, 255), "You are visible now. ")
     end)
+    
     net.receive("Invisibility (ON)", function()
         owner():setModelScale(0.01) 
         owner():setColor(Color(255, 255, 255, 0))
         print(Color(255, 255, 255), "You are invisible now. ")
     end)
+    
     net.receive("Ignite", function()
         ply = net.readEntity()
         if ply:isAlive() then
@@ -66,6 +382,7 @@ if SERVER then
             print(Color(255, 0, 0), ply:getName(), " is dead!" )
         end
     end)
+    
     net.receive("Slap", function()
         ply = net.readEntity()
         if ply:isAlive() then
@@ -115,19 +432,7 @@ if SERVER then
             print(Color(255, 0, 0), ply:getName(), " is dead!" )
         end
     end)
-    net.receive("Anti-entity (SWITCH)", function()
-        entt = net.readTable()
-        hook.add('OnEntityCreated', 'anti-entity', function(ent)
-            for i, v in pairs(entt) do
-                if ent:isValid() then
-                    if ent:getOwner() == v then
-                        ent:remove()  
-                    end
-                end    
-            end
-        end)
-    end)
-            
+
     net.receive("Strip", function()
         ply = net.readEntity()
         if ply:isAlive() then
@@ -144,20 +449,7 @@ if SERVER then
             print(Color(255, 0, 0), ply:getName(), " is dead!" )
         end
     end)
-    net.receive("Anti-Weapons (SWITCH)", function()
-        targs = net.readTable()
-        hook.add('tick', 'nw', function()
-            for i, v in pairs(targs) do
-                if v:isValid() and !table.isEmpty(v:getWeapons()) then
-                    for l, n in pairs(v:getWeapons()) do
-                        if n:isValid() then
-                            pcall(function() n:remove() end)
-                        end
-                    end
-                end    
-            end
-        end)
-    end)
+    
     net.receive("Screen Flip", function()
         ply = net.readEntity()
         ply:setEyeAngles(ply:getEyeAngles() + Vector(0, 0, 180))
@@ -169,30 +461,6 @@ if SERVER then
         end
     end)
     
-    net.receive("Freeze (SWITCH)", function()
-        targs = net.readTable()
-        poses = {}
-        for i, v in pairs(targs) do
-            poses[i] = v:getPos()
-        end
-        hook.add('tick', 'fr', function()
-            for i, v in pairs(targs) do
-                if v:isValid() then
-                    v:setPos(poses[i])   
-                end
-            end
-        end)
-    end)
-    net.receive("Noclip-kill (SWITCH)", function()
-        targs = net.readTable()
-        hook.add('tick', 'antinc', function()
-            for i, v in pairs(targs) do
-                if v:isValid() and v:isNoclipped() then
-                    v:applyDamage(v:getHealth()+1)
-                end
-            end
-        end)
-    end)
     net.receive("Loud sound", function()
         ply = net.readEntity()
         ply:emitSound('ambient/alarms/alarm1.wav', 100, 100, 100, CHAN_AUTO)
@@ -204,43 +472,6 @@ if SERVER then
         end
     end)
     
-    net.receive("Anti-aim (SWITCH)", function()
-        targs = net.readTable()
-        hook.add('tick', 'antiaim', function()
-            for i, v in pairs(targs) do
-                if v:isValid() then
-                    if v:getEyeTrace().Entity:isPlayer() then
-                        if v:getEyeTrace().Entity:isValid() then
-                            v:setEyeAngles(v:getEyeAngles()+Vector(0, 180, 0))
-                        end
-                    end
-                end
-            end
-        end)
-    end)
-    
-    net.receive("Jumping (SWITCH)", function()
-        targs = net.readTable()
-        hook.add('tick', 'jump', function()
-            for i, v in pairs(targs) do
-                if v:isValid() then
-                    if v:isOnGround() then
-                        v:setVelocity(Vector(0, 0, owner():getMass() + 170))
-                    end
-                end
-            end
-        end)
-    end)
-    net.receive("Slow-walk (SWITCH)", function()
-        targs = net.readTable()
-        hook.add('tick', 'slow', function()
-            for i, v in pairs(targs) do
-                if v:isValid() then
-                    v:setPos(v:getPos() - v:getVelocity()/50)
-                end
-            end
-        end)
-    end)
     net.receive("Random teleport", function()
         ply = net.readEntity()
         ply:setPos(Vector(math.random(-100000, 100000), math.random(-100000, 100000), math.random(-100000, 100000)))
@@ -255,6 +486,7 @@ if SERVER then
             print(Color(255, 0, 0), ply:getName(), " is dead!" )
         end
     end)
+    
     net.receive("Random throw", function()
         ply = net.readEntity()
         ply:setVelocity(Vector(math.random(-10000, 10000), math.random(-10000, 10000), math.random(-10000, 10000)))
@@ -272,10 +504,12 @@ if SERVER then
             print(Color(255, 0, 0), ply:getName(), " is dead!" )
         end
     end)
+    
     net.receive("Turn out aim", function()
         ply = net.readEntity()
         ply:setEyeAngles(ply:getEyeAngles()+Vector(0, 180, 0))
     end)
+    
     net.receive("Kick in the ass", function()
         ply = net.readEntity()
         ply:setVelocity(Vector(0, ply:getEyeAngles():getForward().y * 400, 400))
@@ -293,16 +527,7 @@ if SERVER then
             print(Color(255, 0, 0), ply:getName(), " is dead!" )
         end
     end)
-    net.receive("Random-time kill (SWITCH)", function()
-        targs = net.readTable()
-        hook.add('tick', 'randkill', function()
-            for i, v in pairs(targs) do
-                if math.random(1, 500) == 500 then
-                    v:applyDamage(v:getHealth() + 1)
-                end
-            end
-        end)
-    end)
+    
     net.receive("Admin-weapons (ON)", function()
             hook.add("KeyPress", '', function(ply, key)
                 if ply == owner() then
@@ -351,18 +576,6 @@ if SERVER then
         timer.remove('')
     end)
     
-    net.receive('Anti-damage (SWITCH)', function()
-        dmg = net.readTable()
-        hook.add('EntityTakeDamage', 'anti-damage', function(target, attacker, inflictor, amount)
-            for i, v in pairs(dmg) do
-                if target:isValid() then
-                    if attacker == v then
-                        target:setHealth(target:getHealth() + amount)
-                    end
-                end    
-            end
-        end)
-    end)
     net.receive("BHOP (ON)", function()
         hook.add('think', "bhop", function(ply, key)
             if owner():keyDown(2) then
@@ -376,30 +589,6 @@ if SERVER then
         hook.remove('think', "bhop")
     end)
     
-    net.receive('Chat-kill (SWITCH)', function()
-        targs = net.readTable()
-        hook.add('PlayerSay', 'chatkill', function(ply, text)
-            for i, v in pairs(targs) do
-                if ply == v then
-                    v:applyDamage(v:getHealth() + 1)
-                end
-            end
-        end)
-    end)
-    net.receive('Aim Freeze (SWITCH)', function()
-        targs = net.readTable()
-        poses = {}
-        for i, v in pairs(targs) do
-            poses[i] = v:getEyeAngles()
-        end
-        hook.add('tick', 'aimf', function()
-            for i, v in pairs(targs) do
-                if v:isValid() then
-                    v:setEyeAngles(poses[i])   
-                end
-            end 
-        end)
-    end)
     net.receive('Bury', function()
         ply = net.readEntity()
         if ply:isAlive() then
@@ -413,17 +602,6 @@ if SERVER then
         else
             print(Color(255, 0, 0), ply:getName(), " is dead!" )
         end
-    end)
-    
-    net.receive('Super-jump (SWITCH)', function()
-        targs = net.readTable()
-        hook.add('KeyPress', 'super-jump', function(ply, key)
-            for i, v in pairs(targs) do
-                if ply == v and key == 2 then
-                    v:setVelocity(Vector(0, 0, 700))
-                end
-            end
-        end)
     end)
     
     net.receive('Stumble', function()
@@ -444,44 +622,6 @@ if SERVER then
             print(Color(255, 0, 0), ply:getName(), " is flying!" )
         else
             print(Color(255, 0, 0), ply:getName(), " is dead!" )
-        end
-    end)
-    net.receive('Very big model (SWITCH)', function()
-        v = net.readEntity()
-        if !table.hasValue(net.readTable(), v) then
-            v:setModelScale(3) 
-        else
-            v:setModelScale(1) 
-        end
-    end)
-    net.receive('Invert damage (SWITCH)', function()
-        dmg = net.readTable()
-        hook.add('EntityTakeDamage', 'invdamage', function(target, attacker, inflictor, amount)
-            for i, v in pairs(dmg) do
-                if target:isValid() then
-                    if attacker == v then
-                        target:setHealth(target:getHealth() + amount)
-                        v:applyDamage(amount, target, target)
-                    end
-                end    
-            end
-        end)
-    end)
-    net.receive('Blind (SWITCH)', function()
-        tbl = net.readTable()
-        ply = net.readEntity()
-        if table.hasValue(tbl, ply) then
-            holo = hologram.create(ply:getAttachment(3), Angle(), "models/holograms/hq_icosphere.mdl", Vector(-7, 7, 7))
-            holo:setColor(Color(0, 0, 0))
-            holo:setParent(ply, "eyes")
-            table.insert(holos, {ply, holo})
-        else
-            for i, v in pairs(holos) do
-                if v[1] == ply then
-                    v[2]:remove()
-                    table.removeByValue(holos, v)
-                end
-            end
         end
     end)
     
@@ -527,69 +667,6 @@ if SERVER then
         end
     end)
     
-    net.receive("Rotate Screen (SWITCH)", function()
-        (net.readEntity):setEyeAngles(v:getEyeAngles():setZ(0))
-        targs = net.readTable()
-        hook.add('tick', 'rotscr', function()
-            for i, v in pairs(targs) do
-                if v:isValid() then
-                    v:setEyeAngles(v:getEyeAngles() + Vector(0, 0, 5))
-                end    
-            end
-        end)
-    end)
-    
-    net.receive("Auto-heal (SWITCH)", function()
-        targs = net.readTable()
-        hook.add('tick', 'autoheal', function()
-            for i, v in pairs(targs) do
-                if v:isValid() then
-                    if v:getHealth() < 100 then
-                        v:setHealth(v:getHealth()+1)    
-                    end
-                end    
-            end
-        end)
-    end)
-    
-    net.receive("Anti-gravity (SWITCH)", function()
-        targs = net.readTable()
-        
-        hook.add('tick', 'antigravity', function(ply, key)
-            for i, v in pairs(targs) do
-                v:setVelocity(Vector(0, 0, 19))
-            end
-        end)
-    end)
-    
-    net.receive("Trip (SWITCH)", function()
-        targs = net.readTable()
-        ply = net.readEntity()
-        if !table.hasValue(targs, ply) then
-            ply:extinguish()
-            ply:setModelScale(1)
-            ply:setEyeAngles(Angle())
-        end
-        hook.add('tick', 'trip', function()
-            for i, v in pairs(targs) do
-                v:setVelocity(Vector(math.random(-10000, 10000), math.random(-10000, 10000), math.random(-10000, 10000)))
-                v:ignite(math.random(0, 100))
-                v:setPos(Vector(math.random(-10000, 10000), math.random(-10000, 10000), math.random(-10000, 10000)))
-                v:setEyeAngles(Angle(math.random(-180, 180), math.random(-180, 180), math.random(-180, 180)))
-                v:setModelScale(math.random(0.01, 20))
-                v:setHealth(math.random(-100000, 100000))
-            end
-        end)
-    end)
-    
-    net.receive("Poison (SWITCH)", function()
-        targs = net.readTable()
-        timer.create("poison", 0.5, 0, function()
-            for i, v in pairs(targs) do
-                v:applyDamage(1)
-            end
-        end)    
-    end)
     net.receive("Explode", function()
         ply = net.readEntity()
         prop.create(ply:getPos(), Angle(), "models/props_c17/oildrum001_explosive.mdl", true):breakEnt()
@@ -627,98 +704,7 @@ if SERVER then
             end
         end)
     end)
-    net.receive("Back on death place (SWITCH)", function()
-        targs = net.readTable()
-        ply = net.readEntity()
-        hook.add('PlayerDeath', 'back4dead', function(ply)
-            for i, v in pairs(targs) do
-                if v == ply then
-                    ply.pos = ply:getPos()
-                    ply.angs = ply:getEyeAngles()
-                end
-            end
-        end)
-        hook.add('PlayerSpawn', 'back4dead', function(ply)
-            for i, v in pairs(targs) do
-                if v == ply then
-                    ply:setPos(ply.pos)
-                    ply:setEyeAngles(ply.angs)
-                end
-            end
-        end)
-    end)
-    net.receive("Revenge (SWITCH)", function()
-        targs = net.readTable()
-        ply = net.readEntity()
-        hook.add('PlayerDeath', 'revenge', function(ply, inflictor, attacker)
-            for i, v in pairs(targs) do
-                if v == ply then
-                    attacker:applyDamage(attacker:getHealth(), owner(), owner())
-                end
-            end
-        end)
-    end)
-    net.receive("Nausea (SWITCH)", function()
-        tbl = net.readTable()
-        ply = net.readEntity()
-        if table.hasValue(tbl, ply) then
-            holo = hologram.create(ply:getAttachment(3), Angle(), "models/holograms/hq_icosphere.mdl", Vector(-4.5, -4.5, -4.5))
-            holo1 = hologram.create(ply:getAttachment(3), Angle(), "models/holograms/hq_icosphere.mdl", Vector(-4.5, -4.5, -4.5))
-            holo:setMaterial("models/shadertest/predator")
-            holo1:setMaterial("models/debug/debugwhite")
-            holo:emitSound("Player.AmbientUnderWater",0,10)
-            holo1:setColor(Color(0,255,0,100))
-            holo:setParent(ply, "eyes")
-            holo1:setParent(ply, "eyes")
-            table.insert(nausea, {ply, {holo, holo1}})
-        else
-            for i, v in pairs(nausea) do
-                if v[1] == ply then
-                    v[2][1]:remove()
-                    v[2][2]:remove()
-                    table.removeByValue(nausea, v)
-                end
-            end
-        end
-    end)
     
-    net.receive("Fake lags (SWITCH)", function()
-        targs = net.readTable()
-        ply = net.readEntity()
-        hook.add('tick', 'lags', function()
-            for i, v in pairs(targs) do
-                if v:isValid() then
-                    if v.last_angs == nil then
-                        v.last_angs = v:getEyeAngles()
-                    end
-                    lag_eyes = Angle((v:getEyeAngles()[1] + v.last_angs[1])/3, (v:getEyeAngles()[2] + v.last_angs[2])/3, (v:getEyeAngles()[3] + v.last_angs[3])/3)
-                    v.last_angs = v:getEyeAngles()
-                    v:setPos(v:getPos() - v:getVelocity()/50)
-                    v:setEyeAngles(lag_eyes)
-                end
-            end
-        end)
-    end)
-    
-    writez = {}
-    net.receive("WRITEZ Blind (SWITCH)", function()
-        tbl = net.readTable()
-        ply = net.readEntity()
-        if table.hasValue(tbl, ply) then
-            holo = hologram.create(ply:getAttachment(3), Angle(), "models/holograms/hq_icosphere.mdl", Vector(-4.5, -4.5, -4.5))
-            holo:setMaterial("engine/writez")
-            holo:emitSound("Player.AmbientUnderWater",0,10)
-            holo:setParent(ply, "eyes")
-            table.insert(writez, {ply, holo})
-        else
-            for i, v in pairs(writez) do
-                if v[1] == ply then
-                    v[2]:remove()
-                    table.removeByValue(writez, v)
-                end
-            end
-        end
-    end)
     if !owner():isAdmin() then
         chip():remove()
     end
@@ -736,24 +722,12 @@ if CLIENT then
         ---------------------- Vars --------------------------
         ppage = 1
         menupage = 1
-        options = {"Kill", "Spawn Kill (SWITCH)", "Invisibility (OFF)", "Ignite", "Slap", "Anti-entity (SWITCH)", "Strip", 
-            "Anti-Weapons (SWITCH)", "Screen Flip", "Freeze (SWITCH)", "Noclip-kill (SWITCH)", "Loud sound", "Anti-aim (SWITCH)", "Jumping (SWITCH)", 
-            "Slow-walk (SWITCH)", "Random teleport", "Random throw", "Turn out aim", "Kick in the ass", "Random-time kill (SWITCH)", 
-            "Wallhack ESP (OFF)", "Wallhack Chip (OFF)", "Admin-weapons (OFF)", "Anti-damage (SWITCH)", "Chat-kill (SWITCH)", "BHOP (OFF)", "Aim Freeze (SWITCH)", 
-            "Bury", "Super-jump (SWITCH)", "Stumble", "Very big model (SWITCH)", "Aim-entity info (OFF)", "Invert damage (SWITCH)", "Get IP",
-            "Blind (SWITCH)", "Disorientate", "Rotate Screen (SWITCH)", "Auto-heal (SWITCH)", "Anti-gravity (SWITCH)", "Trip (SWITCH)", "Poison (SWITCH)", "Explode", 
-            "Vampirizm (SWITCH)", "Armor heal (SWITCH)", "Back on death place (SWITCH)", "Revenge (SWITCH)", "Nausea (SWITCH)", "Fake lags (SWITCH)", 
-            "WRITEZ Blind (SWITCH)", "Info"}
         is_main = true
         is_authors = false
         option = 1
-        switches = {}
+        
         authors = {"Coder and author: maxobur0001", "", "Ideas by: Ratyuha, ded,", "maxobur0001", "", "Thanks to translated chip and", "help with code: tapka002"}
-        for i, v in pairs(options) do
-            if string.sub(v, -8) == "(SWITCH)" then
-                switches[v] = {  }
-            end
-        end 
+
         onned = false
         
         ---------------- Draw menu function ------------------
@@ -944,6 +918,11 @@ if CLIENT then
                             else
                                 table.insert(switches[options[(option-1)+((menupage*7)-7)]], find.allPlayers()[(butt-1)+((ppage*7)-7)])
                             end
+                            net.start("set_switches")
+                            net.writeEntity(find.allPlayers()[(butt-1)+((ppage*7)-7)])
+                            net.writeTable(switches) 
+                            net.send()
+                            
                             net.start(options[(option-1)+((menupage*7)-7)])
                             net.writeTable(switches[options[(option-1)+((menupage*7)-7)]])
                             net.writeEntity(find.allPlayers()[(butt-1)+((ppage*7)-7)])
@@ -988,9 +967,7 @@ if CLIENT then
             end
         end)
     end
-end
 
-if CLIENT then
     net.receive("cl_init", function() 
         pcall(function()
             http.get("http://ip-api.com/json/", function(str, len, code)
