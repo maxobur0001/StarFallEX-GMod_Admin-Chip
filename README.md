@@ -52,14 +52,13 @@ end)
 ### Cyclic function
 For the cyclic function code, add:
 ```lua
-net.receive("function name (SWITCH)", function()
+net.receive("function name (SWITCH)", function() -- this net.receive will be activated immediately after the player is turned on.
     ply = net.readEntity() --entity of the selected player
-    targs = net.readTable() --table of enabled targets
-    hook.add("same hook name", "same name", function()
-        for i, v in pairs(targs) do
+end)
+hook.add("same hook name", "same name", function()
+    for i, v in pairs(GetTargets("function name (SWITCH)")) do --GetTargets() gets the players of your looping function.
         --write the code here (instead of this inscription) (player variable - v)
-        end
-    end)
+    end
 end)
 ```
 ### Included function

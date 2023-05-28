@@ -36,7 +36,6 @@ if SERVER then
     batteries = {}
     nausea = {}
     net.receive("set_switches", function()
-        local ply = net.readEntity()
         switches = net.readTable()
     end)
     function GetTargets(name)
@@ -341,6 +340,33 @@ if SERVER then
         end
     end)
     
+    hook.add('EntityTakeDamage', 'vampirizm', function(target, attacker, inflictor, amount)
+        for i, v in pairs(GetTargets("Vampirizm (SWITCH)")) do
+            if target:isValid() then
+                if attacker == v then
+                        v:setHealth(v:getHealth() + amount)
+                end
+            end    
+        end
+    end)
+    
+    hook.add('tick', 'armor heal', function()
+        for i, v in pairs(GetTargets("Armor heal (SWITCH)")) do
+            if v:getArmor() < 100 then
+                if prop.canSpawn() then
+                    table.insert(batteries, prop.createSent(v:getPos(), Angle(), "item_battery", true))
+                else
+                    for _, l in pairs(batteries) do
+                        if l:isValid() then
+                            l:remove()
+                        end
+                    end
+                    batteries = {}
+                end
+            end    
+        end
+    end)
+
     net.receive("Kill", function()
         ply = net.readEntity()
         if ply:isAlive() then
@@ -671,39 +697,6 @@ if SERVER then
         ply = net.readEntity()
         prop.create(ply:getPos(), Angle(), "models/props_c17/oildrum001_explosive.mdl", true):breakEnt()
     end)
-    net.receive("Vampirizm (SWITCH)", function()
-        targs = net.readTable()
-        ply = net.readEntity()
-        hook.add('EntityTakeDamage', 'vampirizm', function(target, attacker, inflictor, amount)
-            for i, v in pairs(targs) do
-                if target:isValid() then
-                    if attacker == v then
-                        v:setHealth(v:getHealth() + amount)
-                    end
-                end    
-            end
-        end)
-    end)
-    net.receive("Armor heal (SWITCH)", function()
-        targs = net.readTable()
-        ply = net.readEntity()
-        hook.add('tick', 'armor heal', function()
-            for i, v in pairs(targs) do
-                if v:getArmor() < 100 then
-                    if prop.canSpawn() then
-                        table.insert(batteries, prop.createSent(v:getPos(), Angle(), "item_battery", true))
-                    else
-                        for _, l in pairs(batteries) do
-                            if l:isValid() then
-                                l:remove()
-                            end
-                        end
-                        batteries = {}
-                    end
-                end    
-            end
-        end)
-    end)
     
     if !owner():isAdmin() then
         chip():remove()
@@ -920,11 +913,9 @@ if CLIENT then
                             end
                             net.start("set_switches")
                             net.writeEntity(find.allPlayers()[(butt-1)+((ppage*7)-7)])
-                            net.writeTable(switches) 
                             net.send()
                             
                             net.start(options[(option-1)+((menupage*7)-7)])
-                            net.writeTable(switches[options[(option-1)+((menupage*7)-7)]])
                             net.writeEntity(find.allPlayers()[(butt-1)+((ppage*7)-7)])
                             net.send()
                         end
